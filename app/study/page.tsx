@@ -133,7 +133,7 @@ export default function StudyPage() {
           <button
             type="button"
             onClick={() => setShowBack((v) => !v)}
-            className="card h-[480px] w-full text-left active:scale-[0.99]"
+            className="card h-[calc(100dvh-260px)] min-h-[480px] w-full text-left active:scale-[0.99]"
           >
             {!showBack ? (
               <div className="flex h-full flex-col justify-between space-y-3">
