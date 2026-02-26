@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type StudyCard = {
   id: string;
@@ -15,6 +15,7 @@ type StudyCard = {
 type ReviewResult = "correct" | "hold" | "wrong";
 
 export default function StudyPage() {
+  const cardRef = useRef<HTMLButtonElement | null>(null);
   const [cards, setCards] = useState<StudyCard[]>([]);
   const [index, setIndex] = useState(0);
   const [showBack, setShowBack] = useState(false);
@@ -22,6 +23,7 @@ export default function StudyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"today" | "retry" | "selected">("today");
+  const [cardHeight, setCardHeight] = useState(480);
   const load = useCallback(async (nextMode: "today" | "retry" | "selected" = "today", selectedIds: string[] = []) => {
     setLoading(true);
     setError("");
@@ -57,6 +59,27 @@ export default function StudyPage() {
       .slice(0, 100);
     void load(ids.length > 0 ? "selected" : "today", ids);
   }, [load]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+      const updateHeight = () => {
+        if (!cardRef.current) return;
+        const top = cardRef.current.getBoundingClientRect().top;
+        const footerHeight = 108;
+        const bottomGap = 12;
+        const next = Math.floor(window.innerHeight - top - footerHeight - bottomGap);
+        setCardHeight(Math.max(280, next));
+      };
+
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    window.addEventListener("orientationchange", updateHeight);
+    return () => {
+      window.removeEventListener("resize", updateHeight);
+      window.removeEventListener("orientationchange", updateHeight);
+    };
+  }, [loading, cards.length, index, showBack]);
 
   const current = cards[index];
   const progress = useMemo(() => `${Math.min(index + 1, cards.length)}/${cards.length}`, [index, cards.length]);
@@ -131,9 +154,11 @@ export default function StudyPage() {
             </button>
           </div>
           <button
+            ref={cardRef}
             type="button"
             onClick={() => setShowBack((v) => !v)}
-            className="card h-[calc(100dvh-260px)] min-h-[480px] w-full text-left active:scale-[0.99]"
+            className="card w-full text-left active:scale-[0.99]"
+            style={{ height: `${cardHeight}px` }}
           >
             {!showBack ? (
               <div className="flex h-full flex-col justify-between space-y-3">
