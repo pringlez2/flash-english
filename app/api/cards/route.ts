@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
           },
         }
       : undefined,
-    orderBy: [{ updatedAt: "desc" }],
+    orderBy: [{ createdAt: "desc" }],
     take: Math.min(Math.max(limit, 1), 100),
   });
 

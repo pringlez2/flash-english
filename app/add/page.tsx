@@ -22,7 +22,6 @@ export default function AddCardPage() {
   const [pronWordKr, setPronWordKr] = useState("");
   const [sentenceKr, setSentenceKr] = useState("");
   const [pronSentenceKr, setPronSentenceKr] = useState("");
-  const [topic, setTopic] = useState("");
   const [suggestions, setSuggestions] = useState<SuggestCandidate[]>([]);
   const [picked, setPicked] = useState<string>("");
   const [loadingSuggest, setLoadingSuggest] = useState(false);
@@ -41,7 +40,7 @@ export default function AddCardPage() {
       const res = await fetch("/api/sentences/suggest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word: word.trim(), topic: topic.trim() || undefined }),
+        body: JSON.stringify({ word: word.trim() }),
       });
 
       const data = (await res.json()) as SuggestResponse;
@@ -108,7 +107,8 @@ export default function AddCardPage() {
       <h1 className="text-2xl font-black">단어 추가하기</h1>
       <form onSubmit={save} className="card space-y-3">
         <input className="input" placeholder="word (필수)" value={word} onChange={(e) => setWord(e.target.value)} />
-        <input className="input" placeholder="topic (선택: family/work)" value={topic} onChange={(e) => setTopic(e.target.value)} />
+        <input className="input" placeholder="meaning_kr (선택)" value={meaningKr} onChange={(e) => setMeaningKr(e.target.value)} />
+        <input className="input" placeholder="pron_word_kr (선택)" value={pronWordKr} onChange={(e) => setPronWordKr(e.target.value)} />
 
         <button type="button" className="button" onClick={suggest} disabled={loadingSuggest}>
           {loadingSuggest ? "추천 중..." : "예문 추천받기"}
@@ -146,8 +146,6 @@ export default function AddCardPage() {
           onChange={(e) => setSentence(e.target.value)}
         />
 
-        <input className="input" placeholder="meaning_kr (선택)" value={meaningKr} onChange={(e) => setMeaningKr(e.target.value)} />
-        <input className="input" placeholder="pron_word_kr (선택)" value={pronWordKr} onChange={(e) => setPronWordKr(e.target.value)} />
         <input className="input" placeholder="sentence_kr (선택)" value={sentenceKr} onChange={(e) => setSentenceKr(e.target.value)} />
         <input
           className="input"
