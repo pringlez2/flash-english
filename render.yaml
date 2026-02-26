@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: flash-english
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        value: gpt-4.1-mini

@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReviewResult {
+  CORRECT @map("correct")
+  HOLD    @map("hold")
+  WRONG   @map("wrong")
+}
+
+model Card {
+  id                 String       @id @default(cuid())
+  word               String
+  sentence           String
+  meaningKr          String?      @map("meaning_kr")
+  pronWordKr         String?      @map("pron_word_kr")
+  sentenceKr         String?      @map("sentence_kr")
+  pronSentenceKr     String?      @map("pron_sentence_kr")
+  lastResult         ReviewResult? @map("last_result")
+  nextDueAt          DateTime     @default(now()) @map("next_due_at")
+  streak             Int          @default(0)
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  reviews            Review[]
+
+  @@index([nextDueAt])
+  @@index([word])
+  @@map("cards")
+}
+
+model Review {
+  id         String       @id @default(cuid())
+  cardId     String       @map("card_id")
+  result     ReviewResult
+  reviewedAt DateTime     @default(now()) @map("reviewed_at")
+  nextDueAt  DateTime     @map("next_due_at")
+  streak     Int
+
+  card       Card         @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([cardId, reviewedAt])
+  @@index([nextDueAt])
+  @@map("reviews")
+}
