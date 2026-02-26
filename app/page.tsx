@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getStudyQueue } from "@/lib/study-queue";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [todayQueue, recentCards] = await Promise.all([
     getStudyQueue(20, 10),
