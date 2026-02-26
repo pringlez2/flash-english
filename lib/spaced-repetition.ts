@@ -1,32 +1,32 @@
-import { ReviewResult } from "@prisma/client";
+export type ReviewResult = "CORRECT" | "HOLD" | "WRONG";
 
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
 export function toReviewResult(value: string): ReviewResult | null {
-  if (value === "correct") return ReviewResult.CORRECT;
-  if (value === "hold") return ReviewResult.HOLD;
-  if (value === "wrong") return ReviewResult.WRONG;
+  if (value === "correct") return "CORRECT";
+  if (value === "hold") return "HOLD";
+  if (value === "wrong") return "WRONG";
   return null;
 }
 
 export function fromReviewResult(value: ReviewResult | null): "correct" | "hold" | "wrong" | null {
-  if (value === ReviewResult.CORRECT) return "correct";
-  if (value === ReviewResult.HOLD) return "hold";
-  if (value === ReviewResult.WRONG) return "wrong";
+  if (value === "CORRECT") return "correct";
+  if (value === "HOLD") return "hold";
+  if (value === "WRONG") return "wrong";
   return null;
 }
 
 export function calcReviewState(currentStreak: number, result: ReviewResult, now = new Date()) {
-  if (result === ReviewResult.WRONG) {
+  if (result === "WRONG") {
     return {
       streak: 0,
       nextDueAt: new Date(now.getTime() + 10 * MINUTE_MS),
     };
   }
 
-  if (result === ReviewResult.HOLD) {
+  if (result === "HOLD") {
     return {
       streak: 0,
       nextDueAt: new Date(now.getTime() + 12 * HOUR_MS),

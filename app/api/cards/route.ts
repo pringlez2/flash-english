@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({
-    cards: cards.map((card) => ({
+    cards: cards.map((card: (typeof cards)[number]) => ({
       id: card.id,
       word: card.word,
       sentence: card.sentence,

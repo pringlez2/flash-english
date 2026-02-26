@@ -19,7 +19,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "word is required" }, { status: 400 });
     }
 
-    const existing = await prisma.card.findMany({
+    const existing: Array<{
+      sentence: string;
+      sentenceKr: string | null;
+      pronSentenceKr: string | null;
+      meaningKr: string | null;
+      pronWordKr: string | null;
+    }> = await prisma.card.findMany({
       where: {
         word: {
           equals: word,
@@ -30,15 +36,15 @@ export async function POST(req: NextRequest) {
     });
 
     const reused: SentenceCandidate[] = existing
-      .map((item) => ({
+      .map((item: (typeof existing)[number]) => ({
         sentence: item.sentence.trim(),
         sentence_kr: item.sentenceKr?.trim() || "",
         pron_sentence_kr: item.pronSentenceKr?.trim() || "",
       }))
-      .filter((item) => item.sentence && item.sentence_kr && item.pron_sentence_kr);
+      .filter((item: SentenceCandidate) => item.sentence && item.sentence_kr && item.pron_sentence_kr);
 
-    const existingMeaning = existing.map((item) => item.meaningKr?.trim() || "").find(Boolean) || "";
-    const existingPronWord = existing.map((item) => item.pronWordKr?.trim() || "").find(Boolean) || "";
+    const existingMeaning = existing.map((item: (typeof existing)[number]) => item.meaningKr?.trim() || "").find(Boolean) || "";
+    const existingPronWord = existing.map((item: (typeof existing)[number]) => item.pronWordKr?.trim() || "").find(Boolean) || "";
 
     if (reused.length === 3 && existingMeaning && existingPronWord) {
       return NextResponse.json({
