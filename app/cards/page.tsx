@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Card = {
   id: string;
@@ -29,10 +30,12 @@ const resultMeta: Record<string, { label: string; className: string }> = {
 };
 
 export default function CardsPage() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string>("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -41,7 +44,9 @@ export default function CardsPage() {
       const res = await fetch(`/api/cards?query=${encodeURIComponent(query)}&limit=50`, { cache: "no-store" });
       const data = (await res.json()) as { cards: Card[] };
       if (active) {
-        setCards(data.cards || []);
+        const nextCards = data.cards || [];
+        setCards(nextCards);
+        setSelectedIds((prev) => prev.filter((id) => nextCards.some((card) => card.id === id)));
         setLoading(false);
       }
     };
@@ -66,6 +71,7 @@ export default function CardsPage() {
       const res = await fetch(`/api/cards/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       setCards((prev) => prev.filter((card) => card.id !== id));
+      setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
     } catch {
       window.alert("삭제 실패. 다시 시도해주세요.");
     } finally {
@@ -82,10 +88,31 @@ export default function CardsPage() {
 
   const groupEntries = Object.entries(groupedCards);
 
+  const toggleCard = (id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  };
+
+  const toggleDateGroup = (group: Card[]) => {
+    const groupIds = group.map((card) => card.id);
+    const allSelected = groupIds.every((id) => selectedIds.includes(id));
+    setSelectedIds((prev) => {
+      if (allSelected) return prev.filter((id) => !groupIds.includes(id));
+      return Array.from(new Set([...prev, ...groupIds]));
+    });
+  };
+
+  const startSelectedStudy = () => {
+    if (!selectedIds.length) return;
+    router.push(`/study?ids=${encodeURIComponent(selectedIds.join(","))}`);
+  };
+
   return (
     <main className="space-y-4">
       <h1 className="text-2xl font-black">카드 목록</h1>
       <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="단어 검색" />
+      <button type="button" className="button" disabled={selectedIds.length === 0} onClick={startSelectedStudy}>
+        선택 카드 학습하기 ({selectedIds.length})
+      </button>
 
       <section className="card">
         {loading && <p className="text-sm text-slate-600">불러오는 중...</p>}
@@ -93,7 +120,17 @@ export default function CardsPage() {
         <div className="space-y-4">
           {groupEntries.map(([dateKey, group]) => (
             <section key={dateKey} className="space-y-2">
-              <h2 className="text-sm font-bold text-slate-700">{formatDateLabel(group[0].created_at)}</h2>
+              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-2 py-1">
+                <h2 className="text-sm font-bold text-slate-700">{formatDateLabel(group[0].created_at)}</h2>
+                <label className="flex items-center gap-2 text-xs text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={group.every((card) => selectedIds.includes(card.id))}
+                    onChange={() => toggleDateGroup(group)}
+                  />
+                  날짜 전체 선택
+                </label>
+              </div>
               <ul className="space-y-2">
                 {group.map((card) => {
                   const result = card.last_result ? resultMeta[card.last_result] : resultMeta.none;
@@ -101,6 +138,13 @@ export default function CardsPage() {
                     <li key={card.id}>
                       <div className="rounded-xl border p-3">
                         <div className="flex items-center justify-between gap-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(card.id)}
+                            onChange={() => toggleCard(card.id)}
+                            className="h-4 w-4"
+                            aria-label={`${card.word} 선택`}
+                          />
                           <Link href={`/cards/${card.id}`} className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-2">
                               <span className="font-bold">{card.word}</span>

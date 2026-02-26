@@ -21,27 +21,50 @@ export default function StudyPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [mode, setMode] = useState<"today" | "retry" | "selected">("today");
+  const [selectedIdsParam, setSelectedIdsParam] = useState("");
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    setSelectedIdsParam(params.get("ids") || "");
+  }, []);
+
+  const load = useCallback(async (nextMode: "today" | "retry" | "selected" = "today") => {
     setLoading(true);
     setError("");
+    const selectedIds = selectedIdsParam
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0)
+      .slice(0, 100);
+
+    const query =
+      nextMode === "selected" && selectedIds.length > 0
+        ? `/api/study/today?ids=${encodeURIComponent(selectedIds.join(","))}`
+        : nextMode === "retry"
+          ? "/api/study/today?mode=retry&limit=50"
+          : "/api/study/today?limit=20&newLimit=10";
+
     try {
-      const res = await fetch("/api/study/today?limit=20&newLimit=10", { cache: "no-store" });
+      const res = await fetch(query, { cache: "no-store" });
       const data = (await res.json()) as { cards?: StudyCard[]; error?: string };
       if (!res.ok) throw new Error(data.error || "학습 목록 로드 실패");
       setCards(data.cards || []);
       setIndex(0);
       setShowBack(false);
+      setMode(nextMode);
     } catch {
       setError("네트워크가 느리거나 오류가 발생했습니다. 다시 시도하세요.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedIdsParam]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    const hasSelected = Boolean(selectedIdsParam);
+    void load(hasSelected ? "selected" : "today");
+  }, [load, selectedIdsParam]);
 
   const current = cards[index];
   const progress = useMemo(() => `${Math.min(index + 1, cards.length)}/${cards.length}`, [index, cards.length]);
@@ -73,25 +96,55 @@ export default function StudyPage() {
     }
   };
 
+  const reshuffle = () => {
+    setCards((prev) => {
+      if (prev.length <= 1) return prev;
+      const shuffled = [...prev];
+      for (let i = shuffled.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    });
+    setIndex(0);
+    setShowBack(false);
+  };
+
   return (
     <main className="space-y-4">
       <h1 className="text-2xl font-black">학습</h1>
+      <div className="flex gap-2">
+        <button type="button" className="button" disabled={loading || submitting} onClick={() => void load("today")}>
+          오늘 학습
+        </button>
+        <button type="button" className="button" disabled={loading || submitting} onClick={() => void load("retry")}>
+          보류/오답 재학습
+        </button>
+      </div>
+      <p className="text-xs text-slate-600">
+        현재 모드: {mode === "today" ? "오늘 학습" : mode === "retry" ? "보류/오답 재학습" : "선택 카드 학습"}
+      </p>
 
       {loading && <p className="text-sm text-slate-600">학습 카드 불러오는 중...</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {!loading && !current && <p className="card text-center text-slate-600">오늘 학습할 카드가 없습니다.</p>}
+      {!loading && !current && <p className="card text-center text-slate-600">학습할 카드가 없습니다.</p>}
 
       {current && (
         <>
-          <div className="text-sm text-slate-600">진행: {progress}</div>
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-slate-600">진행: {progress}</div>
+            <button type="button" className="rounded-lg border px-3 py-1 text-xs font-semibold" onClick={reshuffle}>
+              순서 재설정
+            </button>
+          </div>
           <button
             type="button"
             onClick={() => setShowBack((v) => !v)}
-            className="card min-h-64 w-full text-left active:scale-[0.99]"
+            className="card h-[480px] w-full text-left active:scale-[0.99]"
           >
             {!showBack ? (
-              <div className="flex min-h-56 flex-col justify-between space-y-3">
+              <div className="flex h-full flex-col justify-between space-y-3">
                 <p className="text-xs uppercase tracking-wide text-slate-500">Front</p>
                 <div className="space-y-2">
                   <h2 className="text-4xl font-black">{current.word}</h2>
@@ -102,16 +155,16 @@ export default function StudyPage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="flex h-full flex-col justify-start gap-3">
                 <p className="text-xs uppercase tracking-wide text-slate-500">Back</p>
-                <section className="space-y-1 rounded-xl border p-3">
+                <section className="flex flex-1 flex-col justify-start space-y-1 rounded-xl border p-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Word</p>
                   <p className="text-2xl font-black">{current.word}</p>
                   <p className="text-sm text-slate-700">
                     {current.meaning_kr || "-"} {current.pron_word_kr ? `(${current.pron_word_kr})` : ""}
                   </p>
                 </section>
-                <section className="space-y-1 rounded-xl border p-3">
+                <section className="flex flex-1 flex-col justify-start space-y-1 rounded-xl border p-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Sentence</p>
                   <p className="text-lg font-semibold text-slate-900">{current.sentence}</p>
                   <p className="text-sm text-slate-700">{current.sentence_kr || "-"}</p>

@@ -1,14 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStudyQueue } from "@/lib/study-queue";
+import { getCardsByIds, getRetryQueue, getStudyQueue } from "@/lib/study-queue";
 import { fromReviewResult } from "@/lib/spaced-repetition";
 
 export async function GET(req: NextRequest) {
   const parsedLimit = Number(req.nextUrl.searchParams.get("limit") || "20");
   const parsedNewLimit = Number(req.nextUrl.searchParams.get("newLimit") || "10");
+  const mode = req.nextUrl.searchParams.get("mode") || "today";
+  const idsParam = req.nextUrl.searchParams.get("ids") || "";
+  const ids = idsParam
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => id.length > 0)
+    .slice(0, 100);
   const limit = Math.min(Math.max(Number.isFinite(parsedLimit) ? parsedLimit : 20, 1), 100);
   const newLimit = Math.min(Math.max(Number.isFinite(parsedNewLimit) ? parsedNewLimit : 10, 0), 100);
 
-  const cards = await getStudyQueue(limit, newLimit);
+  const cards =
+    ids.length > 0
+      ? await getCardsByIds(ids)
+      : mode === "retry"
+        ? await getRetryQueue(limit)
+        : await getStudyQueue(limit, newLimit);
 
   return NextResponse.json({
     cards: cards.map((card) => ({
