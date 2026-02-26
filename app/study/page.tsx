@@ -22,22 +22,9 @@ export default function StudyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<"today" | "retry" | "selected">("today");
-  const [selectedIdsParam, setSelectedIdsParam] = useState("");
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    setSelectedIdsParam(params.get("ids") || "");
-  }, []);
-
-  const load = useCallback(async (nextMode: "today" | "retry" | "selected" = "today") => {
+  const load = useCallback(async (nextMode: "today" | "retry" | "selected" = "today", selectedIds: string[] = []) => {
     setLoading(true);
     setError("");
-    const selectedIds = selectedIdsParam
-      .split(",")
-      .map((id) => id.trim())
-      .filter((id) => id.length > 0)
-      .slice(0, 100);
 
     const query =
       nextMode === "selected" && selectedIds.length > 0
@@ -59,12 +46,17 @@ export default function StudyPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedIdsParam]);
+  }, []);
 
   useEffect(() => {
-    const hasSelected = Boolean(selectedIdsParam);
-    void load(hasSelected ? "selected" : "today");
-  }, [load, selectedIdsParam]);
+    if (typeof window === "undefined") return;
+    const ids = (new URLSearchParams(window.location.search).get("ids") || "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0)
+      .slice(0, 100);
+    void load(ids.length > 0 ? "selected" : "today", ids);
+  }, [load]);
 
   const current = cards[index];
   const progress = useMemo(() => `${Math.min(index + 1, cards.length)}/${cards.length}`, [index, cards.length]);
