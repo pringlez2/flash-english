@@ -2,12 +2,21 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const isStudySession = pathname === "/study" && searchParams.get("session") === "1";
+  const [isStudySession, setIsStudySession] = useState(false);
+
+  useEffect(() => {
+    if (pathname !== "/study") {
+      setIsStudySession(false);
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    setIsStudySession(params.get("session") === "1");
+  }, [pathname]);
 
   return (
     <div className={`main-shell${isStudySession ? " study-focus-shell" : ""}`}>
