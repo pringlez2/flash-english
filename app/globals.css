@@ -43,6 +43,10 @@ a {
   padding-bottom: 96px;
 }
 
+.study-focus-shell {
+  padding-top: 8px;
+}
+
 .input,
 .textarea,
 .select,

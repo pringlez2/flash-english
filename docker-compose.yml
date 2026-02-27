@@ -1,0 +1,22 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: flash-english-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: flash_english
+      MYSQL_USER: flash
+      MYSQL_PASSWORD: flashpass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpass"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:

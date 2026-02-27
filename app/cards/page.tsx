@@ -7,12 +7,13 @@ import { useRouter } from "next/navigation";
 type Card = {
   id: string;
   word: string;
-  sentence: string;
+  meaning_kr?: string | null;
   streak: number;
   last_result: "correct" | "hold" | "wrong" | null;
   created_at: string;
   next_due_at: string;
 };
+type WordDisplayMode = "both" | "en" | "ko";
 
 const formatDateLabel = (iso: string) =>
   new Date(iso).toLocaleDateString("ko-KR", {
@@ -36,6 +37,7 @@ export default function CardsPage() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string>("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [displayMode, setDisplayMode] = useState<WordDisplayMode>("both");
 
   useEffect(() => {
     let active = true;
@@ -110,6 +112,29 @@ export default function CardsPage() {
     <main className="space-y-4">
       <h1 className="text-2xl font-black">카드 목록</h1>
       <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="단어 검색" />
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className={`rounded-lg border px-3 py-2 text-sm font-semibold ${displayMode === "both" ? "bg-teal-50 border-teal-300 text-teal-700" : ""}`}
+          onClick={() => setDisplayMode("both")}
+        >
+          영어+한글
+        </button>
+        <button
+          type="button"
+          className={`rounded-lg border px-3 py-2 text-sm font-semibold ${displayMode === "en" ? "bg-teal-50 border-teal-300 text-teal-700" : ""}`}
+          onClick={() => setDisplayMode("en")}
+        >
+          영어만
+        </button>
+        <button
+          type="button"
+          className={`rounded-lg border px-3 py-2 text-sm font-semibold ${displayMode === "ko" ? "bg-teal-50 border-teal-300 text-teal-700" : ""}`}
+          onClick={() => setDisplayMode("ko")}
+        >
+          한글만
+        </button>
+      </div>
       <button type="button" className="button" disabled={selectedIds.length === 0} onClick={startSelectedStudy}>
         선택 카드 학습하기 ({selectedIds.length})
       </button>
@@ -147,14 +172,22 @@ export default function CardsPage() {
                           />
                           <Link href={`/cards/${card.id}`} className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="font-bold">{card.word}</span>
-                              <span className="text-xs text-slate-500">streak {card.streak}</span>
+                              <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                                {(displayMode === "both" || displayMode === "en") && (
+                                  <span className="font-bold">{card.word}</span>
+                                )}
+                                {(displayMode === "both" || displayMode === "ko") && (
+                                  <span className={`text-sm text-slate-600 ${displayMode === "ko" ? "font-bold text-slate-900" : ""}`}>
+                                    {card.meaning_kr || "-"}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <p className="line-clamp-1 text-sm text-slate-600">{card.sentence}</p>
-                            <div className="mt-2">
+                            <div className="mt-2 flex items-center gap-2">
                               <span className={`rounded-full border px-2 py-1 text-xs font-semibold ${result.className}`}>
                                 학습결과: {result.label}
                               </span>
+                              <span className="text-xs text-slate-500">streak {card.streak}</span>
                             </div>
                           </Link>
                           <button
